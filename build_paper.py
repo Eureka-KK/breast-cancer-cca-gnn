@@ -526,7 +526,9 @@ def build(print_main=False):
     (paper/'main.tex').write_text(source,encoding='utf-8')
     (paper/'appendix.tex').write_text(appendix_source(summary,folds,audit),encoding='utf-8')
     for name in ['spconf.sty','missing.pdf','calibration_km.pdf']:
-        shutil.copy2(ROOT/'paper'/name,paper/name)
+        generated=ROOT/'paper'/name
+        if generated.exists():shutil.copy2(generated,paper/name)
+        elif not (paper/name).exists():raise FileNotFoundError(f'Missing manuscript asset: {name}')
     print('Manuscript and appendix sources generated from verified tables')
 
 
