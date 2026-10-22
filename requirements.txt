@@ -1,0 +1,16 @@
+numpy==2.0.2
+pandas==2.2.3
+scipy==1.17.1
+scikit-learn==1.7.2
+scikit-survival==0.25.0
+torch==2.5.1
+torch-geometric==2.6.1
+snfpy==0.2.2
+lifelines==0.30.0
+matplotlib==3.10.6
+pytest==8.4.2
+threadpoolctl==3.6.0
+requests==2.32.5
+PyMuPDF>=1.24
+# Install integrao==0.1.3 separately with --no-deps; its old exact pins
+# conflict with the validated runtime above. See BASELINES.md.

@@ -1,0 +1,11 @@
+.venv/
+.private/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.aux
+*.log
+*.out
+*.synctex.gz
+third_party/
+paper/README.md
