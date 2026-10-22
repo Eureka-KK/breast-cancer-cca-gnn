@@ -1,0 +1,302 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage{spconf,amsmath,graphicx,times}
+\ifdefined\pdfinfo\pdfinfo{/Author (EurekaChen) /Title () /Subject () /Keywords ()}
+\else\special{pdf:docinfo << /Author (EurekaChen) /Title () /Subject () /Keywords () >>}\fi
+\title{Clinical-Anchored Multi-Omics Graph Learning for Breast Cancer Survival: An Audited METABRIC Evaluation}
+\name{Author information to be completed}
+\address{Affiliation and contact information to be completed}
+\begin{document}
+\maketitle
+\begin{abstract}
+Multi-omics survival models require patient-level matching and evaluation that
+distinguishes representation learning from information leakage. We adapt a
+preliminary four-view canonical-correlation graph model to METABRIC, using
+mRNA, promoter methylation, copy-number alterations and baseline clinical
+covariates. A regularized generalized canonical correlation analysis (GCCA)
+uses one shared latent target with an explicit clinical-view weight; a static
+graph combines the available projected views and predicts overall survival.
+We evaluate 1,416 patients with 830 deaths using five patient-level held-out
+folds, validation-only model selection and three seeds, comparing fifteen
+main configurations including survival-specific and adapted multi-omics
+baselines. The shared-anchor graph achieved a mean C-index of 0.607 (conditional 95\% CI 0.587--0.625), compared with 0.656 for Structured clinical Cox. The difference was -0.049. All fifteen nonempty view subsets, five
+component ablations and source-group holdouts are evaluated. The fusion configuration did not outperform the strongest evaluated baseline. The experiment supports a reproducible evaluation framework rather than a claim of superior prognosis prediction.
+There are no repeated visits, paired images or independent external cohort.
+\end{abstract}
+\begin{keywords}Multi-omics, breast cancer, survival, GCCA, graph learning\end{keywords}
+\section{Introduction}
+Breast cancer prognosis depends on clinical disease burden and molecular
+heterogeneity. METABRIC provides expression, copy-number and clinical
+annotations for breast tumours, with additional molecular profiles available
+for partially overlapping samples \cite{curtis,pereira}. Combining these
+assays may improve individual risk estimates, but increasing model complexity
+does not ensure that the additional information generalizes. Matched patient
+identifiers, genuinely baseline covariates and a consistent evaluation target
+are prerequisites for any meaningful comparison.
+
+Graph-based multi-omics methods offer a natural way to model relationships
+between patients. MOGONET uses view-specific graph encoders and cross-view
+classification-label interactions \cite{mogonet}; IntegrAO learns aligned
+representations from partially overlapping molecular graphs \cite{integrao}.
+These contributions do not, by themselves, establish an advantage for a new
+Cox survival model. Comparisons must distinguish original task definitions
+from downstream adapters, and must keep test patients outside representation
+fitting and graph diffusion. Survival-specific baselines, including DeepSurv
+and MultiSurv, provide complementary nonlinear approaches \cite{deepsurv,multisurv}.
+
+The supplied preliminary design aligned three molecular views independently
+to templated clinical text and then averaged the clinical projections.
+Independently fitted canonical coordinates can differ in sign and orientation;
+arithmetic averaging does not resolve this ambiguity. We therefore evaluate
+a shared-target regularized GCCA formulation, alongside that preliminary
+pairwise construction. GCCA is an established estimator \cite{gcca}; the
+clinical weight and its combination with missing-aware inductive graph
+prediction are implementation choices to test, not claims of a new CCA theory.
+
+Our contribution is an auditable, static survival-learning evaluation:
+(i) identifier-based alignment of four METABRIC views; (ii) shared versus
+pairwise clinical alignment and a training-reference graph; and (iii) matched
+comparisons, component ablations and missing-view stress tests. We explicitly
+report negative findings and adapted baseline architectures. This work is a
+multi-omics prognosis study, not an imaging-fusion validation or a temporal
+disease-progression study.
+\clearpage
+\section{Methods}
+\subsection{Patients, views and preprocessing}
+From 2,509 clinical records, 1,980 had positive overall-survival time and a
+recognized event/censoring code. Intersecting the three assay sample sets with
+primary tumours and valid survival yielded 1,416 unique patients, including
+830 deaths. Before training, all views were ordered by the same verified
+patient/sample mapping. Duplicate gene symbols were retained as distinct
+probe/promoter rows, not collapsed into an unsupported biological identity.
+
+Expression measurements were already log$_2$ intensities and were not logged
+again. Promoter methylation beta values were transformed to
+$\log_2[\beta/(1-\beta)]$ after clipping to $[10^{-5},1-10^{-5}]$; discrete
+copy-number calls were retained. Within each training fold, assay features
+with over 20\% missing observations were excluded, 500 or 1,000 high-variance
+features were selected, missing entries were median-filled, and features were
+standardized and clipped at five training standard deviations. No feature
+selection, vocabulary fitting or scaling used validation/test patients.
+
+The clinical view contained age, sex, stage, grade, ER, PR and HER2 status, tumour
+size, histological type and menopausal state. Stage was missing in 26.7\% of
+the included patients. Outcome, recurrence and treatment fields were excluded.
+Fixed field--value strings were encoded with 1--2-gram TF-IDF and training-only
+SVD (at most 128 dimensions). These are templated structured covariates,
+not free-text notes or an additional information source. A structured
+numerical and categorical encoder was evaluated as an ablation.
+
+\subsection{Shared alignment and static graph}
+Let $X_v$ be centered training features for view $v$, and let $a_4$ denote the
+clinical-view weight; other $a_v$ equal one. We solve the regularized MAXVAR
+GCCA problem
+\begin{equation}
+\min_{G,\{W_v\}}\sum_{v=1}^{4}a_v
+  \big(\|X_vW_v-G\|_F^2+n\lambda\|W_v\|_F^2\big),\quad G^\top G=nI.
+\end{equation}
+The leading eigenvectors of $\sum_v a_vH_v$ give $G$, where
+$H_v=X_v(X_v^\top X_v+n\lambda I)^{-1}X_v^\top$; primal or dual solves
+are chosen by matrix size. The projections are then fitted to this single
+target. The comparator fits three independent molecular--clinical ridge
+CCAs and averages the clinical projections as in the preliminary design.
+
+For availability indicators $m_{iv}$, graph features are
+$\bar z_i=(\sum_vm_{iv}z_{iv})/(\sum_vm_{iv})$. A symmetric binary cosine
+$k$-nearest-neighbour graph is normalized after adding self-loops. Two
+residual GCN layers with LayerNorm and dropout produce the graph embedding.
+The Cox head receives this embedding, each masked view projection and the
+four availability indicators. Independent view masking during training is
+conditioned to leave at least one view; an otherwise empty draw retains mRNA.
+
+The training graph contains only training patients. At inference, each query
+receives messages from its nearest training nodes and itself; training-node
+states and degrees are frozen. Queries have no edges to each other or back
+to training nodes. Thus a prediction does not depend on other patients in its
+test batch. No visit times, survival times or event indicators enter the graph.
+
+\subsection{Learning and validation}
+The neural Cox head minimizes Breslow negative partial log likelihood
+\begin{equation}
+\mathcal L=-\frac{1}{\sum_i\delta_i}\sum_{i:\delta_i=1}
+\left[r_i-\log\sum_{j:t_j\geq t_i}\exp(r_j)\right].
+\end{equation}
+Five event-stratified patient folds were fixed with seed 42. Each development
+set reserved 20\% for validation (approximately 64/16/20\% overall). Up to
+twelve configurations per method were evaluated using validation C-index;
+the winner was rerun with seeds 42, 2026 and 3407. Neural training used AdamW,
+weight decay $10^{-3}$, at most 300 epochs and patience 30. Ablations reused
+the selected proposed-model settings. Full search and selected values are
+reported in the separate appendix and machine-readable parameter tables.
+\clearpage
+\section{Experiments and Results}
+\subsection{Matched baselines and discrimination}
+The main comparison included five unimodal regularized Cox models
+(three molecular views and two clinical encodings),
+concatenation Cox, a survival forest, a DeepSurv-style Cox MLP, pairwise
+CCA--Cox, equal-weight GCCA--Cox, the preliminary pairwise graph, a scaled
+MultiSurv-style discrete-time model, a MOGONET-style multi-graph Cox adapter,
+official IntegrAO embeddings with an inductive Cox adapter, and the proposed
+configuration. The independently reimplemented/scaled baselines are labeled
+as such; they are not exact reproductions of every original architecture.
+IntegrAO representation settings were fixed, with validation selection only
+for its Cox regularization. All other model-selection details are in the appendix.
+
+Table~1 reports the mean test C-index over five folds and three seeds.
+Patient bootstrap intervals (1,000 resamples) preserve held-out fold membership
+and use the same resampled patients for method comparisons. They condition on
+the fitted models and do not include retraining or new-center uncertainty.
+\begin{center}\small Table 1. Held-out overall-survival discrimination.\end{center}
+\begin{center}
+\footnotesize
+\begin{tabular}{lrr}\hline
+Method & C-index & 95\% CI\\\hline
+Structured clinical Cox & 0.656 & 0.634--0.675\\
+Survival forest & 0.620 & 0.600--0.639\\
+mRNA Cox & 0.619 & 0.599--0.640\\
+Pairwise CCA + Cox & 0.619 & 0.599--0.639\\
+Templated clinical Cox & 0.618 & 0.596--0.638\\
+DeepSurv-style & 0.607 & 0.587--0.626\\
+Shared-anchor graph & 0.607 & 0.587--0.625\\
+MOGONET-style + Cox & 0.605 & 0.585--0.625\\
+Concatenation Cox & 0.604 & 0.584--0.625\\
+GCCA + Cox & 0.598 & 0.576--0.621\\
+Pairwise CCA + GCN & 0.591 & 0.575--0.609\\
+MultiSurv-style (scaled) & 0.586 & 0.567--0.605\\
+IntegrAO + Cox adapter & 0.576 & 0.557--0.597\\
+Methylation Cox & 0.544 & 0.523--0.567\\
+CNA Cox & 0.515 & 0.492--0.538\\
+\hline\end{tabular}
+\end{center}
+The shared-anchor graph achieved a mean C-index of 0.607 (conditional 95\% CI 0.587--0.625), compared with 0.656 for Structured clinical Cox. The difference was -0.049. The paired bootstrap difference against the strongest baseline had 95\% interval -0.075 to -0.025 (Holm-adjusted $p=0.038$).
+The structured clinical-only model reached 0.656, making it an
+essential control for any claimed benefit from expensive molecular views.
+IPCW concordance, dynamic AUC and Brier scores at one, three and five years
+are reported in the appendix. Censoring estimates and Cox baseline hazards
+were fitted on training data. Time-dependent evaluation administratively
+censored held-out observations beyond training follow-up support.
+
+\subsection{Missing views, ablations and source groups}
+All fifteen nonempty availability patterns were evaluated without refitting
+the model on the test patients. Table~2 summarizes clinically interpretable
+single-view omissions; all combinations and random missingness at 10, 30
+and 50\% appear in the appendix. Missingness was simulated independently
+and should not be interpreted as a clinical missing-not-at-random process.
+\begin{center}\small Table 2. Proposed model under view omission.\end{center}
+\begin{center}
+\footnotesize
+\begin{tabular}{lr}\hline
+Available input & C-index\\\hline
+Without mRNA & 0.579\\
+Without methylation & 0.604\\
+Without CNA & 0.617\\
+Without clinical & 0.592\\
+All four views & 0.607\\
+\hline\end{tabular}
+\end{center}
+\begin{center}\small Table 3. Component ablations (fixed selected settings).\end{center}
+\begin{center}
+\footnotesize
+\begin{tabular}{lr}\hline
+Configuration & C-index\\\hline
+Structured clinical & 0.655\\
+Without raw residual & 0.609\\
+Shared-anchor graph & 0.607\\
+Without graph & 0.602\\
+Equal view weights & 0.601\\
+Without mask training & 0.597\\
+\hline\end{tabular}
+\end{center}
+The structured-clinical graph variant reached 0.655, close to the
+structured clinical Cox point estimate of 0.656. This comparison does not
+establish added value from graph modeling.
+The equal-weight ablation removes additional clinical weighting, not the
+clinical view itself. If the proposed search selects weight one, that fold's
+anchor ablation is identical by construction. This possibility is retained
+rather than forcing an artificial distinction. The structured-clinical
+comparison tests representation, since both encoders receive the same fields.
+
+Across five source-group holdouts, the proposed model had mean C-indices ranging from 0.562 to 0.658. These groups are METABRIC source labels and are
+not an independent external breast-cancer cohort. All group-specific models
+were fitted without the held-out group; results include the clinical,
+concatenation, GCCA, original-graph, proposed and IntegrAO controls.
+\clearpage
+\section{Discussion}
+The fusion configuration did not outperform the strongest evaluated baseline. The experiment supports a reproducible evaluation framework rather than a claim of superior prognosis prediction. The clinical-only control and the explicitly adapted
+modern baselines are particularly informative: a flexible graph may preserve
+correlated molecular structure without improving the ranking of survival
+times. Added model capacity, assay noise, limited sample size and the objective
+mismatch between unsupervised correlation and censored outcome prediction
+are plausible explanations to investigate, not mechanisms established here.
+
+The shared GCCA target resolves a coordinate consistency problem in the
+preliminary pairwise design, but correcting that construction is not proof
+of prognostic superiority. Likewise, accurate operation under a specified
+view-availability pattern does not establish calibrated uncertainty or an
+error-control guarantee. The supplied rejection and Learn Then Test papers
+concern different prediction losses; we do not transfer their guarantees to
+censored survival outcomes without a corresponding theory and experiment.
+
+Several limitations bound the interpretation. First, selecting complete assays
+reduces the available survival cohort from 1,980 to 1,416 patients and may
+introduce selection bias. Second, validation and test patients originate from
+one study, and the additional source-group holdouts do not replace external
+validation. Third, clinical strings are an encoding of measured fields; they
+cannot establish a language-model or clinical-note benefit. Fourth, there are
+no repeated visits and no matched patient images. Accordingly, the temporal
+and imaging extensions in the preliminary proposal remain unevaluated.
+
+The survival head makes a proportional-hazards modeling assumption, and
+Breslow-derived survival probabilities may be miscalibrated even when ranking
+performance is acceptable. Calibration and out-of-fold Kaplan--Meier groups
+are therefore reported separately. Bootstrap intervals are conditional on
+this experiment, while subgroup analyses and simulated missingness are
+exploratory. Architecture-scaled baseline reimplementations are useful
+controls but do not establish a complete state-of-the-art ranking.
+
+\section{Conclusion}
+We provide patient-aligned four-view METABRIC preprocessing, shared and
+pairwise canonical-correlation models, an inductive static graph, and a
+reproducible survival benchmark with missing-view evaluation. The results
+support only the performance comparisons measured here. Independent
+external validation, genuinely longitudinal assays and paired imaging would
+be required before extending the scientific or clinical claims.
+
+\section{Compliance with Ethical Standards}
+This is a secondary analysis of publicly distributed, de-identified METABRIC
+research data. No new patient data were collected. The responsible authors
+must confirm their institution's review/waiver determination before any
+submission; no approval identifier or exemption is invented here.
+
+\section{Acknowledgments and Disclosure}
+This preliminary draft requires author, affiliation, funding and conflict-of-interest
+confirmation. Codex assisted with implementation, experiment execution and
+draft text throughout the methods/results manuscript; accountable human
+authors must verify the analyses, references and conclusions before submission.
+Code and aggregate tables are prepared for a public repository; patient-level
+clinical data and predictions are excluded. The separate appendix is an
+author-review supplement, not an assumed permitted extra technical submission page.
+
+\begin{thebibliography}{10}\small
+\bibitem{curtis} C. Curtis et al., ``The genomic and transcriptomic architecture
+of 2,000 breast tumours reveals novel subgroups,'' \emph{Nature}, vol. 486,
+pp. 346--352, 2012.
+\bibitem{pereira} B. Pereira et al., ``The somatic mutation profiles of 2,433
+breast cancers refines their genomic and transcriptomic landscapes,''
+\emph{Nature Communications}, vol. 7, art. 11479, 2016.
+\bibitem{mogonet} T. Wang et al., ``MOGONET integrates multi-omics data using
+graph convolutional networks allowing patient classification and biomarker
+identification,'' \emph{Nature Communications}, vol. 12, art. 3445, 2021.
+\bibitem{integrao} S. Ma et al., ``Moving towards genome-wide data integration
+for patient stratification with Integrate Any Omics,'' \emph{Nature Machine
+Intelligence}, vol. 7, pp. 29--42, 2025.
+\bibitem{deepsurv} J. L. Katzman et al., ``DeepSurv: personalized treatment
+recommender system using a Cox proportional hazards deep neural network,''
+\emph{BMC Medical Research Methodology}, vol. 18, art. 24, 2018.
+\bibitem{multisurv} L. A. Vale-Silva and K. Rohr, ``Long-term cancer survival
+prediction using multimodal deep learning,'' \emph{Scientific Reports},
+vol. 11, art. 13505, 2021.
+\bibitem{gcca} J. R. Kettenring, ``Canonical analysis of several sets of
+variables,'' \emph{Biometrika}, vol. 58, pp. 433--451, 1971.
+\end{thebibliography}
+\end{document}

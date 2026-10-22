@@ -82,6 +82,7 @@ def main_source(summary,folds,audit):
     row=primary_comparison[primary_comparison.comparator==best.method].iloc[0]
     paired=f'The paired bootstrap difference against the strongest baseline had 95\\% interval {row.ci_low:+.3f} to {row.ci_high:+.3f} (Holm-adjusted $p={row.p_holm:.3f}$).'
     return r'''\documentclass{article}
+\usepackage[T1]{fontenc}
 \usepackage{spconf,amsmath,graphicx,times}
 \ifdefined\pdfinfo\pdfinfo{/Author (EurekaChen) /Title () /Subject () /Keywords ()}
 \else\special{pdf:docinfo << /Author (EurekaChen) /Title () /Subject () /Keywords () >>}\fi
@@ -161,13 +162,13 @@ features were selected, missing entries were median-filled, and features were
 standardized and clipped at five training standard deviations. No feature
 selection, vocabulary fitting or scaling used validation/test patients.
 
-The clinical view contained age, sex, stage, grade, ER/PR/HER2 status, tumour
+The clinical view contained age, sex, stage, grade, ER, PR and HER2 status, tumour
 size, histological type and menopausal state. Stage was missing in 26.7\% of
 the included patients. Outcome, recurrence and treatment fields were excluded.
 Fixed field--value strings were encoded with 1--2-gram TF-IDF and training-only
 SVD (at most 128 dimensions). These are templated structured covariates,
 not free-text notes or an additional information source. A structured
-numerical/categorical encoder was evaluated as an ablation.
+numerical and categorical encoder was evaluated as an ablation.
 
 \subsection{Shared alignment and static graph}
 Let $X_v$ be centered training features for view $v$, and let $a_4$ denote the
@@ -248,6 +249,9 @@ and should not be interpreted as a clinical missing-not-at-random process.
 '''+missing_table+r'''
 \begin{center}\small Table 3. Component ablations (fixed selected settings).\end{center}
 '''+ablation_table+r'''
+The structured-clinical graph variant reached '''+f'{s.loc["structured_clinical"].cindex:.3f}'+r''', close to the
+structured clinical Cox point estimate of '''+f'{clinical.cindex:.3f}'+r'''. This comparison does not
+establish added value from graph modeling.
 The equal-weight ablation removes additional clinical weighting, not the
 clinical view itself. If the proposed search selects weight one, that fold's
 anchor ablation is identical by construction. This possibility is retained
@@ -267,21 +271,21 @@ times. Added model capacity, assay noise, limited sample size and the objective
 mismatch between unsupervised correlation and censored outcome prediction
 are plausible explanations to investigate, not mechanisms established here.
 
-The shared GCCA target resolves a coordinate-consistency problem in the
+The shared GCCA target resolves a coordinate consistency problem in the
 preliminary pairwise design, but correcting that construction is not proof
 of prognostic superiority. Likewise, accurate operation under a specified
 view-availability pattern does not establish calibrated uncertainty or an
-error-control guarantee. The supplied rejection and Learn-Then-Test papers
+error-control guarantee. The supplied rejection and Learn Then Test papers
 concern different prediction losses; we do not transfer their guarantees to
 censored survival outcomes without a corresponding theory and experiment.
 
-Several limitations bound the interpretation. First, complete-assay selection
+Several limitations bound the interpretation. First, selecting complete assays
 reduces the available survival cohort from 1,980 to 1,416 patients and may
 introduce selection bias. Second, validation and test patients originate from
 one study, and the additional source-group holdouts do not replace external
 validation. Third, clinical strings are an encoding of measured fields; they
 cannot establish a language-model or clinical-note benefit. Fourth, there are
-no repeated visits and no patient-matched images. Accordingly, the temporal
+no repeated visits and no matched patient images. Accordingly, the temporal
 and imaging extensions in the preliminary proposal remain unevaluated.
 
 The survival head makes a proportional-hazards modeling assumption, and
@@ -343,6 +347,7 @@ variables,'' \emph{Biometrika}, vol. 58, pp. 433--451, 1971.
 
 def appendix_source(summary,folds,audit):
     parts=[r'''\documentclass[10pt]{article}
+\usepackage[T1]{fontenc}\usepackage{times}
 \usepackage[margin=0.8in]{geometry}
 \usepackage{amsmath,graphicx,longtable}
 \ifdefined\pdfinfo\pdfinfo{/Author (EurekaChen) /Title () /Subject () /Keywords ()}
@@ -412,7 +417,8 @@ settings: 128 hidden units, 8 output dimensions, 10 neighbors, 20 diffusion
 steps, and 300 alignment epochs. Adam uses its original schedule from 0.1,
 decayed by ten each 100 epochs to a minimum 0.001; alignment MSE weight is
 one and t-SNE early exaggeration is removed at epoch 100. A Coxnet head alpha
-is selected from twelve log-spaced values $10^{-3}$ to $10^1$. New patients
+is selected from twelve log-spaced values $10^{-3}$ to $10^1$; its Coxnet
+head uses tolerance $10^{-7}$ (the other Coxnet baselines use $10^{-6}$). New patients
 receive one-way incoming edges from training neighbors only. Evaluation mode
 freezes batch normalization; query-batch independence is asserted. These
 survival and inductive adapters are explicit departures from the original
@@ -484,12 +490,22 @@ selective survival guarantee, or numerical baseline result is invented.
 \section{Per-fold audit and reproducibility}
 The complete fold-results CSV contains all patient counts, event counts,
 metrics, training seconds, selected epoch, model size and exact configuration.
+All forty selected main-CV Cox solutions were re-fitted in a convergence
+audit. They reproduced their original C-indices to numerical precision and
+emitted no solver warnings. Failed numerical search candidates were not
+assigned performance values and were excluded from selection; the attempt
+log retains their status. Interrupted, uncompleted fits were rerun.
 The following table includes each completed main-CV fold/seed result.
 ''')
     parts.append(r'\begin{longtable}{llrrr}\hline Configuration & Fold & Seed & C-index & Epoch\\\hline')
     for _,row in folds[folds.split.str.startswith('cv')].sort_values(['method','split','seed']).iterrows():
         parts.append(tex(row.method)+' & '+tex(row.split)+f' & {row.seed} & {row.cindex:.4f} & {row.best_epoch}'+r'\\')
     parts.append(r'\hline\end{longtable}')
+    loadings=pd.read_csv(ROOT/'results/canonical_loadings.csv')
+    top=loadings[(loadings.fold==0)&(loadings.component==1)&(loadings.loading_rank<=5)]
+    parts.append(r'\section{Training-only canonical interpretation}')
+    parts.append('The following examples are the five largest absolute projection coefficients for component one of fold zero, separately per molecular view. Structure correlations are Pearson correlations of each standardized input feature with that training canonical score. The complete fold/component table is in canonical\\_loadings.csv. Neither coefficients nor correlations establish causal biomarkers; signs and rotations are not compared across folds.')
+    parts.append(table(top,['view','feature','standardized_projection_coefficient','structure_correlation'],['View','Gene/probe row','Coefficient','Correlation']))
     parts.append(r'''Source data, clinical templates and patient-level outcomes/predictions
 remain in the ignored local private directory. The public release contains
 code, configurations, source hashes and aggregate tables only. Author identity,
@@ -509,7 +525,7 @@ def build(print_main=False):
     if not paper.exists():raise ValueError('Create the dedicated LaTeX project first')
     (paper/'main.tex').write_text(source,encoding='utf-8')
     (paper/'appendix.tex').write_text(appendix_source(summary,folds,audit),encoding='utf-8')
-    for name in ['spconf.sty','comparison.pdf','missing.pdf','calibration_km.pdf']:
+    for name in ['spconf.sty','missing.pdf','calibration_km.pdf']:
         shutil.copy2(ROOT/'paper'/name,paper/name)
     print('Manuscript and appendix sources generated from verified tables')
 

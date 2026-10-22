@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "cv_runs": 300,
+  "source_group_runs": 105,
+  "methods": 20,
+  "patients": 1416,
+  "deaths": 830,
+  "missing_subset_runs": 675,
+  "random_missing_runs": 135,
+  "bootstrap_replicates": 1000,
+  "patient_split_disjoint": true,
+  "aggregate_results_match_fold_records": true,
+  "paper_checks": {
+    "main.pdf": {
+      "pages": 4,
+      "author": "EurekaChen",
+      "text_characters": 16652
+    },
+    "appendix.pdf": {
+      "pages": 13,
+      "author": "EurekaChen",
+      "text_characters": 26944
+    }
+  },
+  "visual_review": "Not performed; structure and text checks only"
+}

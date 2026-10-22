@@ -1,0 +1,111 @@
+{
+  "python": "3.11.0",
+  "numpy": "2.0.2",
+  "torch": "2.5.1+cu124",
+  "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "config": {
+    "outer_folds": 5,
+    "validation_fraction": 0.2,
+    "split_seed": 42,
+    "seeds": [
+      42,
+      2026,
+      3407
+    ],
+    "trials": 12,
+    "epochs": 300,
+    "patience": 30,
+    "bootstrap": 1000,
+    "feature_counts": [
+      500,
+      1000
+    ],
+    "ranks": [
+      4,
+      8,
+      16
+    ],
+    "ridges": [
+      0.01,
+      0.1,
+      1.0
+    ],
+    "anchors": [
+      1.0,
+      2.0
+    ],
+    "neighbors": [
+      5,
+      10,
+      20
+    ],
+    "hidden_sizes": [
+      32,
+      64
+    ],
+    "learning_rates": [
+      0.001,
+      0.003,
+      0.01
+    ],
+    "mask_rates": [
+      0.0,
+      0.2,
+      0.4
+    ],
+    "dropout": 0.3,
+    "gcn_layers": 2,
+    "activation": "ReLU",
+    "layernorm_epsilon": 1e-05,
+    "weight_decay": 0.001,
+    "optimizer": "AdamW",
+    "optimizer_betas": [
+      0.9,
+      0.999
+    ],
+    "optimizer_epsilon": 1e-08,
+    "scheduler": "none",
+    "gradient_clip": 5.0,
+    "empty_mask_fallback": "mRNA retained",
+    "cox_ties": "Breslow",
+    "gcca_centering": "training mean",
+    "gcca_projection_scaling": "training standard deviation",
+    "graph_metric": "cosine",
+    "graph_adjacency": "symmetric binary training kNN with self loops",
+    "query_edges": "training to query only; frozen reference states and degrees",
+    "feature_max_missing_fraction": 0.2,
+    "feature_clip_standard_deviations": 5.0,
+    "methylation_epsilon": 1e-05,
+    "tfidf_min_df": 2,
+    "tfidf_max_features": 10000,
+    "tfidf_ngram_range": [
+      1,
+      2
+    ],
+    "tfidf_norm": "l2",
+    "tfidf_lowercase": true,
+    "tfidf_smooth_idf": true,
+    "tfidf_sublinear_tf": false,
+    "text_svd_max_dimensions": 128,
+    "cox_l1_ratio": 0.1,
+    "cox_max_iterations": 10000,
+    "cox_tolerance": 1e-06,
+    "rsf_trees": 200,
+    "rsf_jobs": 4,
+    "rsf_low_memory": true,
+    "rsf_survival": "bootstrap-weighted terminal-node Kaplan-Meier; native-equivalence tested",
+    "rsf_max_features": "sqrt",
+    "multisurv_encoder_dimensions": [
+      128,
+      32
+    ],
+    "multisurv_intervals": 30,
+    "multisurv_interval_months": 12,
+    "integrao_fusing_iterations": 20,
+    "integrao_alignment_epochs": 300,
+    "integrao_hidden": 128,
+    "integrao_embedding": 8,
+    "integrao_neighbors": 10,
+    "threads": 2
+  }
+}

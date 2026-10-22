@@ -47,7 +47,10 @@ python experiment.py --mode cv
 python integrao_baseline.py --mode cv
 python experiment.py --mode cohort --methods clinical_cox clinical_structured_cox concat_cox gcca_cox original_graph proposed
 python integrao_baseline.py --mode cohort
+python curate_results.py
 python summarize.py
+python explain.py
+python audit_cox.py
 python build_paper.py
 ```
 
@@ -55,6 +58,8 @@ The dedicated manuscript/ LaTeX project must exist before build_paper.py;
 it is included in this release. Compile main.tex and appendix.tex separately
 using the official ISBI spconf style included in that folder. Their generated
 tables are derived from CSV results; appendix.tex is not appended to main.tex.
+The delivered PDFs were compiled with Tectonic 0.17.0. After compiling,
+`python validate_release.py` checks result counts, splits, tables and PDF text/structure.
 For a code-only smoke check, use `experiment.py --mode smoke`; smoke results
 are excluded from the main scientific summaries. Runs resume from local
 private predictions; use a fresh project directory if altering the protocol.
@@ -86,3 +91,13 @@ Public source data provenance: https://github.com/cBioPortal/datahub/tree/master
 and the data papers cited in the manuscript. Dependencies retain their own
 licenses. Public visibility alone does not grant a license to the original
 code; the repository owner may add one separately.
+
+## Measured outcome
+
+Across five patient folds and three fixed seeds (1,416 patients; 830 events),
+the proposed templated-clinical graph achieved Harrell C-index 0.607
+(conditional patient-bootstrap 95% CI 0.587–0.625), compared with 0.656
+(0.634–0.676) for structured clinical Cox. The structured-clinical graph
+reached 0.655 (0.635–0.672). These results do not demonstrate a performance
+advantage for the proposed combination. All 300 primary CV runs and 105
+within-study source-group holdout runs are reported, including negative results.

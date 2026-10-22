@@ -1,0 +1,31 @@
+{
+  "completed_cv_methods": [
+    "clinical_cox",
+    "mrna_cox",
+    "methylation_cox",
+    "cna_cox",
+    "integrao_cox",
+    "concat_cox",
+    "deepsurv",
+    "pairwise_cox",
+    "gcca_cox",
+    "original_graph",
+    "multisurv",
+    "mogonet_cox",
+    "proposed",
+    "no_anchor",
+    "no_graph",
+    "no_mask",
+    "no_residual",
+    "structured_clinical",
+    "rsf",
+    "clinical_structured_cox"
+  ],
+  "expected_cv_methods": 20,
+  "completed_cv_runs": 300,
+  "expected_cv_runs": 300,
+  "completed_cohort_runs": 105,
+  "expected_cohort_runs": 105,
+  "bootstrap_replicates": 1000,
+  "uncertainty_scope": "Conditional on fitted models; stratified by held-out fold; no model refits"
+}

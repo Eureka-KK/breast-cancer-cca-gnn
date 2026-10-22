@@ -1,0 +1,54 @@
+{
+  "clinical_patients": 2509,
+  "clinical_samples": 2509,
+  "valid_survival_samples": 1980,
+  "all_three_omics_samples": 1417,
+  "complete_primary_survival_patients": 1416,
+  "events": 830,
+  "excluded_after_clinical": 1093,
+  "clinical_missing_fraction": {
+    "AGE_AT_DIAGNOSIS": 0.0,
+    "SEX": 0.0,
+    "TUMOR_STAGE": 0.2669491525423729,
+    "GRADE": 0.03531073446327684,
+    "ER_STATUS": 0.0,
+    "PR_STATUS": 0.0,
+    "HER2_STATUS": 0.0,
+    "TUMOR_SIZE": 0.009180790960451978,
+    "HISTOLOGICAL_SUBTYPE": 0.007062146892655367,
+    "INFERRED_MENOPAUSAL_STATE": 0.0
+  },
+  "views": {
+    "0": {
+      "features": 20603,
+      "missing": 10,
+      "min": 4.557910442352295,
+      "max": 14.879412651062012,
+      "duplicate_gene_symbols": 218,
+      "transform": "Already log2 intensity; no second log"
+    },
+    "1": {
+      "features": 13188,
+      "missing": 553726,
+      "min": 0.0,
+      "max": 1.0,
+      "duplicate_gene_symbols": 4,
+      "transform": "beta to M; epsilon=1e-5"
+    },
+    "2": {
+      "features": 22544,
+      "missing": 557,
+      "min": -2.0,
+      "max": 2.0,
+      "duplicate_gene_symbols": 2,
+      "transform": "Discrete -2 to 2 calls retained"
+    }
+  },
+  "source_sha256": {
+    "data_mrna_illumina_microarray.txt": "b8aa84ea4d205483e4b2c2794a5eac6e73d4644e0f13e74c940f8e3d81d93dd6",
+    "data_methylation_promoters_rrbs.txt": "41ef7fc670a5d28a3619a6767bc516ced3c02439f97b9f60264ceb45d7b6ac8f",
+    "data_cna.txt": "d11ced593f3001f32a090cc03e2feb3ec55550f57b723ad3d7220d8465f1ff4a",
+    "data_clinical_patient.txt": "2a6bbadc6e4b2b07c0505559d438da959fc5c9aba55c7194abc394e2d6454995",
+    "data_clinical_sample.txt": "9a2291e065e2a0a5337b4eaeb09836e70b1bc3e1ed17714a013b53515697e6dc"
+  }
+}

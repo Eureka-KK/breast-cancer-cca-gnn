@@ -25,3 +25,13 @@ The contribution is an evaluated integration and deployment protocol. Whether
 there is a useful empirical gain must be read from actual tables, including
 negative results. This document is not a claim of first publication, patent
 novelty, independent external validation, or clinical readiness.
+
+## Measured outcome
+
+Across five patient folds and three fixed seeds (1,416 patients; 830 events),
+the proposed templated-clinical graph achieved Harrell C-index 0.607
+(conditional patient-bootstrap 95% CI 0.587–0.625), compared with 0.656
+(0.634–0.676) for structured clinical Cox. The structured-clinical graph
+reached 0.655 (0.635–0.672). These results do not demonstrate a performance
+advantage for the proposed combination. All 300 primary CV runs and 105
+within-study source-group holdout runs are reported, including negative results.

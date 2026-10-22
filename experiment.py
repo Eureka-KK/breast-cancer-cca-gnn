@@ -97,14 +97,14 @@ class Fit:
         self.method=method;self.nparams=0;self.epoch=0
         self.neural=None
         if (method.endswith('_cox') and method!='mogonet_cox') or method in ['gcca_cox','pairwise_cox']:
-            self.model=CoxnetSurvivalAnalysis(l1_ratio=.1,alphas=[cfg['alpha']],
-                fit_baseline_model=False,max_iter=10000,tol=1e-6)
+            self.model=CoxnetSurvivalAnalysis(l1_ratio=CFG['cox_l1_ratio'],alphas=[cfg['alpha']],
+                fit_baseline_model=False,max_iter=CFG['cox_max_iterations'],tol=CFG['cox_tolerance'])
             a=self.flatten(z)
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore');self.model.fit(a,Surv.from_arrays(e,t))
             self.nparams=int(np.count_nonzero(self.model.coef_))
         elif method=='rsf':
-            self.model=RandomSurvivalForest(n_estimators=200,min_samples_leaf=cfg['leaf'],
+            self.model=RandomSurvivalForest(n_estimators=CFG['rsf_trees'],min_samples_leaf=cfg['leaf'],
                 max_features='sqrt',n_jobs=CFG['rsf_jobs'],random_state=seed,low_memory=True)
             a=np.concatenate(z,1)
             self.model.fit(a,Surv.from_arrays(e,t))
@@ -270,11 +270,11 @@ def main():
     if args.mode=='cohort':
         splits=[(int(c),np.flatnonzero(cohort!=c),np.flatnonzero(cohort==c)) for c in np.unique(cohort)]
     else:
-        splits=[(i,tr,te) for i,(tr,te) in enumerate(StratifiedKFold(5,shuffle=True,random_state=42).split(t,e))]
+        splits=[(i,tr,te) for i,(tr,te) in enumerate(StratifiedKFold(CFG['outer_folds'],shuffle=True,random_state=CFG['split_seed']).split(t,e))]
     with threadpool_limits(CFG['threads']):
         for i,development,test in splits:
             if args.fold is not None and args.fold!=i:continue
-            train,valid=train_test_split(development,test_size=.2,random_state=42,stratify=e[development])
+            train,valid=train_test_split(development,test_size=CFG['validation_fraction'],random_state=CFG['split_seed'],stratify=e[development])
             label=f'{args.mode}{i}'
             run_split(label,train,valid,test,raw,clinical,t,e,methods,trials)
             if args.mode=='smoke':break

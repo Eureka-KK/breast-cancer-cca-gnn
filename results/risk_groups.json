@@ -1,0 +1,6 @@
+{
+  "high_n": 701,
+  "low_n": 715,
+  "logrank_p": 4.912512832939897e-14,
+  "threshold": "each training fold median; seed-majority vote"
+}
